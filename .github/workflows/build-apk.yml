@@ -1,4 +1,4 @@
-# Builds a debug APK of Tiny Repair Town on GitHub's cloud runners.
+# Builds a release APK of Tiny Repair Town on GitHub's cloud runners.
 #
 # Why this exists: the dev VM's sandbox blocks the local-network connections the
 # Gradle daemon needs, so `flutter build apk` cannot run there. This workflow
@@ -12,26 +12,26 @@
 #      package via `path: ../`, so the repo root must contain both `app/` and
 #      the top-level `lib/`, `assets/`, `pubspec.yaml`.
 #        git init -b main
-#        git add .
 #        git commit -m "Tiny Repair Town"
 #        git remote add origin <your-repo-url>
 #        git push -u origin main
-#   3. Open the repo on GitHub → Actions tab → "Build debug APK" →
+#   3. Open the repo on GitHub → Actions tab → "Build release APK" →
 #      "Run workflow". (It also runs automatically on every push to main.)
-#   4. When the run finishes green, download the `app-debug-apk` artifact,
-#      unzip it, and copy app-debug.apk to your phone. On the phone, allow
+#   4. When the run finishes green, download the `app-release-apk` artifact,
+#      unzip it, and copy app-release.apk to your phone. On the phone, allow
 #      "Install unknown apps" for your file manager/browser when prompted.
 #
 # Notes:
-# - This builds a DEBUG APK (installable for testing). The store-ready signed
-#   release AAB is a later step needing your keystore decisions; see
-#   docs/RELEASE_CHECKLIST.md.
-# - The debug APK is signed with the standard debug key and uses the temporary
-#   application ID until the owner sets [FINAL_ANDROID_APPLICATION_ID].
+# - This builds a RELEASE APK (smaller and faster than debug). It is signed
+#   with the debug key for now (see android/app/build.gradle.kts) — fine for
+#   testing, not for the Play Store. The store-ready signed release AAB is a
+#   later step needing your keystore decisions; see docs/RELEASE_CHECKLIST.md.
+# - Uses the temporary application ID until the owner sets
+#   [FINAL_ANDROID_APPLICATION_ID].
 # - GitHub Actions is free for public repositories (2,000 min/month on the
 #   free plan for private ones — one build takes ~10-20 minutes).
 
-name: Build debug APK
+name: Build release APK
 
 on:
   push:
@@ -74,13 +74,19 @@ jobs:
         working-directory: app
         run: flutter pub get
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: app
-        run: flutter build apk --debug
+        run: flutter build apk --release
+
+      - name: Verify APK
+        working-directory: app
+        run: |
+          ls -la build/app/outputs/flutter-apk/app-release.apk
+          unzip -t build/app/outputs/flutter-apk/app-release.apk > /dev/null && echo "APK integrity OK"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          name: app-release-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
