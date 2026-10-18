@@ -1,0 +1,28 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+
+# Build outputs
+build/
+app/build/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Snapshot-push sync records (agent-side, never in the repo)
+*.muse-github-snapshot-sync.json
+*.muse-github-snapshot-sync.json.tmp-*

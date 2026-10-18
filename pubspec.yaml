@@ -1,0 +1,15 @@
+name: tiny_repair_town
+description: Pure-Dart game logic for Tiny Repair Town (kids' puzzle game, ages 6-8).
+version: 0.1.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dev_dependencies:
+  test: ^1.25.0
+
+# Single-source content: the Flutter app (app/) loads these via
+# rootBundle.loadString('packages/tiny_repair_town/assets/levels/level_L01.json').
+flutter:
+  assets:
+    - assets/levels/

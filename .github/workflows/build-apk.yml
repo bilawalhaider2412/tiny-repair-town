@@ -1,0 +1,81 @@
+# Builds a debug APK of Tiny Repair Town on GitHub's cloud runners.
+#
+# Why this exists: the dev VM's sandbox blocks the local-network connections the
+# Gradle daemon needs, so `flutter build apk` cannot run there. This workflow
+# builds the exact same project on GitHub Actions instead — no Android SDK
+# install needed on your own computer.
+#
+# Setup (one time, ~10 minutes, all on your side):
+#   1. Create a GitHub account at https://github.com (free).
+#   2. Create a NEW repository and push THIS folder (tiny-repair-town/) as the
+#      repo root — NOT the app/ subfolder. The app depends on the pure-Dart
+#      package via `path: ../`, so the repo root must contain both `app/` and
+#      the top-level `lib/`, `assets/`, `pubspec.yaml`.
+#        git init -b main
+#        git add .
+#        git commit -m "Tiny Repair Town"
+#        git remote add origin <your-repo-url>
+#        git push -u origin main
+#   3. Open the repo on GitHub → Actions tab → "Build debug APK" →
+#      "Run workflow". (It also runs automatically on every push to main.)
+#   4. When the run finishes green, download the `app-debug-apk` artifact,
+#      unzip it, and copy app-debug.apk to your phone. On the phone, allow
+#      "Install unknown apps" for your file manager/browser when prompted.
+#
+# Notes:
+# - This builds a DEBUG APK (installable for testing). The store-ready signed
+#   release AAB is a later step needing your keystore decisions; see
+#   docs/RELEASE_CHECKLIST.md.
+# - The debug APK is signed with the standard debug key and uses the temporary
+#   application ID until the owner sets [FINAL_ANDROID_APPLICATION_ID].
+# - GitHub Actions is free for public repositories (2,000 min/month on the
+#   free plan for private ones — one build takes ~10-20 minutes).
+
+name: Build debug APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Regenerate Gradle wrapper jar
+        # The gradle-wrapper.jar is a binary that can't be pushed via the API;
+        # regenerate it from the official distribution instead.
+        working-directory: app/android
+        run: |
+          curl -sSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          /tmp/gradle-9.3.1/bin/gradle wrapper --gradle-version 9.3.1
+
+      - name: Install app dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build debug APK
+        working-directory: app
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
